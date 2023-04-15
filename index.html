@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Bluesky List</title>
+    </head>
+    <div id="app" />
+    <body>
+        <script type="module">
+            import { h, Component, render } from 'https://esm.sh/preact';
+            import htm from 'https://esm.sh/htm';
+
+            const html = htm.bind(h);
+
+            const params = new URL(window.location.toLocaleString()).searchParams;
+            const user = params.has('user') ? params.get('user') : '';
+
+            async function xrpc(method, params) {
+                const paramStr = new URLSearchParams(params).toString();
+                const url = `https://bsky.social/xrpc/${method}?${paramStr}`;
+                try {
+                    const response = JSON.parse(await fetch(url).then(r => r.text()));
+                    if (response.error) {
+                        console.error(response);
+                        return null;
+                    }
+                    return response;
+                } catch (e) {
+                    console.error(e);
+                    return null;
+                }
+            }
+
+            async function listRecords(params) {
+                const response = await xrpc('com.atproto.repo.listRecords', params);
+                return response !== null ? response.records : null;
+            }
+
+            async function getPosts(repo) {
+                return await listRecords({collection: 'app.bsky.feed.post', repo: repo});
+            }
+
+            class App extends Component {
+                render() {
+                    return html`
+                    <h1>Posts</h1>
+                    <${PostList} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
+                    `;
+                }
+            }
+
+            function PostList(props) {
+                if (!props.hasPosts) {
+                    return html`
+                    <p>
+                        Could not fetch posts.
+                        (Did you specify ?user=SOME_USER in the URL?)
+                    </p>
+                    `;
+                }
+
+                return html`
+                <ul>
+                    ${props.posts.map(post => (
+                        html`<li>${post.value.text}</li>`
+                    ))}
+                </ul>
+                `;
+            }
+
+            const maybePosts = await getPosts(user);
+            const hasPosts = maybePosts !== null;
+            const posts = maybePosts || [];
+
+            render(html`<${App} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
+        </script>
+    </body>
+</html>
