@@ -40,11 +40,21 @@
                 return await listRecords({collection: 'app.bsky.feed.post', repo: repo});
             }
 
+            async function getProfile(repo) {
+                const records =
+                    await listRecords({collection: 'app.bsky.actor.profile', repo: repo});
+                if (!records) {
+                    console.error(`Empty profile response for ${repo}`);
+                    return null;
+                }
+                return records[0];
+            }
+
             class App extends Component {
                 render() {
                     return html`
                     <h1>Posts</h1>
-                    <${PostList} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
+                    <${PostList} profile=${this.props.profile} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
                     `;
                 }
             }
@@ -62,9 +72,35 @@
                 return html`
                 <ul>
                     ${props.posts.map(post => (
-                        html`<li>${post.value.text}</li>`
+                        html`<${Post} profile=${props.profile} post=${post} />`
                     ))}
                 </ul>
+                `;
+            }
+
+            function Post(props) {
+                const post = props.post;
+                const profile = props.profile;
+
+                const uriParts = post.uri.slice(5).split('/');
+                if (uriParts.length != 3) {
+                    return html`<li>(weird post with unexpected URI: ${post.uri})</li>`;
+                }
+
+                const did = uriParts[0];
+                const postId = uriParts[2];
+                const appUrl = `https://staging.bsky.app/profile/${did}/post/${postId}`;
+
+                const name = profile.value?.displayName || '';
+                const isReply = 'reply' in post.value;
+
+                return html`
+                <li>
+                    <a href="${appUrl}" target="_blank">
+                        <b>${name}</b> ${isReply? '(reply)' : ''}
+                        <br />${post.value.text}
+                    </a>
+                </li>
                 `;
             }
 
@@ -72,7 +108,11 @@
             const hasPosts = maybePosts !== null;
             const posts = maybePosts || [];
 
-            render(html`<${App} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
+            const maybeProfile = await getProfile(user);
+            const profile = maybeProfile !== null ? maybeProfile : {};
+            console.log(profile);
+
+            render(html`<${App} profile=${profile} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
         </script>
     </body>
 </html>
