@@ -13,7 +13,7 @@
             const html = htm.bind(h);
 
             const params = new URL(window.location.toLocaleString()).searchParams;
-            const user = params.has('users') ? params.get('users') : '';
+            const users = params.has('users') ? params.get('users').split(';') : [];
 
             async function xrpc(method, params) {
                 const paramStr = new URLSearchParams(params).toString();
@@ -37,7 +37,12 @@
             }
 
             async function getPosts(repo) {
-                return await listRecords({collection: 'app.bsky.feed.post', repo: repo});
+                const posts = await listRecords({collection: 'app.bsky.feed.post', repo: repo});
+                if (!posts) {
+                    console.error(`Could not lookup posts for ${repo}.`);
+                    return [];
+                }
+                return posts;
             }
 
             async function getProfile(repo) {
@@ -45,17 +50,17 @@
                     await listRecords({collection: 'app.bsky.actor.profile', repo: repo});
                 if (!records) {
                     console.error(`Empty profile response for ${repo}`);
-                    return null;
+                    return {};
                 }
                 return records[0];
             }
 
             class App extends Component {
                 render() {
-                    if (this.props.user) {
+                    if (this.props.users.length > 0) {
                         return html`
                         <h1>Posts</h1>
-                        <${PostList} profile=${this.props.profile} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
+                        <${PostList} profiles=${this.props.profiles} posts=${this.props.posts} />
                         `;
                     } else {
                         return html`
@@ -69,16 +74,10 @@
             }
 
             function PostList(props) {
-                if (!props.hasPosts) {
-                    return html`
-                    <p>Could not fetch posts.</p>
-                    `;
-                }
-
                 return html`
                 <ul>
                     ${props.posts.map(post => (
-                        html`<${Post} profile=${props.profile} post=${post} />`
+                        html`<${Post} profiles=${props.profiles} post=${post} />`
                     ))}
                 </ul>
                 `;
@@ -86,7 +85,7 @@
 
             function Post(props) {
                 const post = props.post;
-                const profile = props.profile;
+                const profiles = props.profiles;
 
                 const uriParts = post.uri.slice(5).split('/');
                 if (uriParts.length != 3) {
@@ -97,7 +96,7 @@
                 const postId = uriParts[2];
                 const appUrl = `https://staging.bsky.app/profile/${did}/post/${postId}`;
 
-                const name = profile.value?.displayName || '';
+                const name = profiles[did]?.value?.displayName || '';
                 const isReply = 'reply' in post.value;
 
                 return html`
@@ -118,15 +117,29 @@
               window.location.href = `?${paramStr}`;
             }
 
-            const maybePosts = await getPosts(user);
-            const hasPosts = maybePosts !== null;
-            const posts = maybePosts || [];
+            const profileLookups = Promise.all(users.map(user => getProfile(user)));
+            const postLookups = Promise.all(users.map(user => getPosts(user)));
 
-            const maybeProfile = await getProfile(user);
-            const profile = maybeProfile !== null ? maybeProfile : {};
-            console.log(profile);
+            const posts = (await postLookups).flat();
+            posts.sort((a,b) => -a.value.createdAt.localeCompare(b.value.createdAt));
+            console.log(JSON.stringify(posts));
 
-            render(html`<${App} user=${user} profile=${profile} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
+            const profileList = await profileLookups;
+            const profiles = {};
+            profileList.map(profile => {
+              if (!profile.uri) {
+                return;
+              }
+              const uriParts = profile.uri.slice(5).split('/');
+              if (uriParts.length == 0) {
+                console.error(`Invalid URI for profile: ${profile.uri}`);
+                return;
+              }
+              const did = uriParts[0];
+              profiles[did] = profile;
+            });
+
+            render(html`<${App} users=${users} profiles=${profiles} posts=${posts} />`, document.getElementById("app"));
         </script>
     </body>
 </html>
