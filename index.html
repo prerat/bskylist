@@ -36,6 +36,11 @@
                 return response !== null ? response.records : null;
             }
 
+            async function resolveHandle(handle) {
+                const response = await xrpc('com.atproto.identity.resolveHandle', {handle: handle});
+                return response !== null ? response.did : null;
+            }
+
             async function getPosts(repo) {
                 const posts = await listRecords({collection: 'app.bsky.feed.post', repo: repo});
                 if (!posts) {
@@ -109,10 +114,11 @@
                 `;
             }
 
-            function createList() {
+            async function createList() {
               const users = document.getElementById("users").value.split('\n');
+              const dids = await Promise.all(users.map(user => resolveHandle(user).then(handle => handle || user)));
               const paramStr = new URLSearchParams({
-                users: users.join(';')
+                users: dids.join(';')
               }).toString();
               window.location.href = `?${paramStr}`;
             }
