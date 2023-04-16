@@ -13,7 +13,7 @@
             const html = htm.bind(h);
 
             const params = new URL(window.location.toLocaleString()).searchParams;
-            const user = params.has('user') ? params.get('user') : '';
+            const user = params.has('users') ? params.get('users') : '';
 
             async function xrpc(method, params) {
                 const paramStr = new URLSearchParams(params).toString();
