@@ -52,20 +52,26 @@
 
             class App extends Component {
                 render() {
-                    return html`
-                    <h1>Posts</h1>
-                    <${PostList} profile=${this.props.profile} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
-                    `;
+                    if (this.props.user) {
+                        return html`
+                        <h1>Posts</h1>
+                        <${PostList} profile=${this.props.profile} hasPosts=${this.props.hasPosts} posts=${this.props.posts} />
+                        `;
+                    } else {
+                        return html`
+                        <h1>Create List</h1>
+                        <p>Enter users (one per row).</p>
+                        <p><textarea id="users" /></p>
+                        <p><button onClick=${createList}>Create List</button></p>
+                        `;
+                    }
                 }
             }
 
             function PostList(props) {
                 if (!props.hasPosts) {
                     return html`
-                    <p>
-                        Could not fetch posts.
-                        (Did you specify ?user=SOME_USER in the URL?)
-                    </p>
+                    <p>Could not fetch posts.</p>
                     `;
                 }
 
@@ -104,6 +110,14 @@
                 `;
             }
 
+            function createList() {
+              const users = document.getElementById("users").value.split('\n');
+              const paramStr = new URLSearchParams({
+                users: users.join(';')
+              }).toString();
+              window.location.href = `?${paramStr}`;
+            }
+
             const maybePosts = await getPosts(user);
             const hasPosts = maybePosts !== null;
             const posts = maybePosts || [];
@@ -112,7 +126,7 @@
             const profile = maybeProfile !== null ? maybeProfile : {};
             console.log(profile);
 
-            render(html`<${App} profile=${profile} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
+            render(html`<${App} user=${user} profile=${profile} hasPosts=${hasPosts} posts=${posts} />`, document.getElementById("app"));
         </script>
     </body>
 </html>
