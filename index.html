@@ -1,151 +1,184 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <title>Bluesky List</title>
-    </head>
-    <div id="app" />
-    <body>
-        <script type="module">
-            import { h, Component, render } from 'https://esm.sh/preact';
-            import htm from 'https://esm.sh/htm';
+	<head>
+		<meta charset="utf-8" />
+		<title>Bluesky List</title>
+	</head>
+	<div id="app" />
+	<body>
+		<script type="module">
+			import { h, Component, render } from "https://esm.sh/preact";
+			import htm from "https://esm.sh/htm";
 
-            const html = htm.bind(h);
+			const html = htm.bind(h);
 
-            const params = new URL(window.location.toLocaleString()).searchParams;
-            const users = params.has('users') ? params.get('users').split(';') : [];
+			const params = new URL(window.location.toLocaleString()).searchParams;
+			const users = params.has("users") ? params.get("users").split(";") : [];
 
-            async function xrpc(method, params) {
-                const paramStr = new URLSearchParams(params).toString();
-                const url = `https://bsky.social/xrpc/${method}?${paramStr}`;
-                try {
-                    const response = JSON.parse(await fetch(url).then(r => r.text()));
-                    if (response.error) {
-                        console.error(response);
-                        return null;
-                    }
-                    return response;
-                } catch (e) {
-                    console.error(e);
-                    return null;
-                }
-            }
+			async function xrpc(method, params) {
+				const paramStr = new URLSearchParams(params).toString();
+				const url = `https://bsky.social/xrpc/${method}?${paramStr}`;
+				try {
+					const response = JSON.parse(await fetch(url).then((r) => r.text()));
+					if (response.error) {
+						console.error(response);
+						return null;
+					}
+					return response;
+				} catch (e) {
+					console.error(e);
+					return null;
+				}
+			}
 
-            async function listRecords(params) {
-                const response = await xrpc('com.atproto.repo.listRecords', params);
-                return response !== null ? response.records : null;
-            }
+			async function listRecords(params) {
+				const response = await xrpc("com.atproto.repo.listRecords", params);
+				return response !== null ? response.records : null;
+			}
 
-            async function resolveHandle(handle) {
-                const response = await xrpc('com.atproto.identity.resolveHandle', {handle: handle});
-                return response !== null ? response.did : null;
-            }
+			async function resolveHandle(handle) {
+				const response = await xrpc("com.atproto.identity.resolveHandle", {
+					handle: handle,
+				});
+				return response !== null ? response.did : null;
+			}
 
-            async function getPosts(repo) {
-                const posts = await listRecords({collection: 'app.bsky.feed.post', repo: repo});
-                if (!posts) {
-                    console.error(`Could not lookup posts for ${repo}.`);
-                    return [];
-                }
-                return posts;
-            }
+			async function getPosts(repo) {
+				const posts = await listRecords({
+					collection: "app.bsky.feed.post",
+					repo: repo,
+				});
+				if (!posts) {
+					console.error(`Could not lookup posts for ${repo}.`);
+					return [];
+				}
+				return posts;
+			}
 
-            async function getProfile(repo) {
-                const records =
-                    await listRecords({collection: 'app.bsky.actor.profile', repo: repo});
-                if (!records) {
-                    console.error(`Empty profile response for ${repo}`);
-                    return {};
-                }
-                return records[0];
-            }
+			async function getProfile(repo) {
+				const records = await listRecords({
+					collection: "app.bsky.actor.profile",
+					repo: repo,
+				});
+				if (!records) {
+					console.error(`Empty profile response for ${repo}`);
+					return {};
+				}
+				return records[0];
+			}
 
-            class App extends Component {
-                render() {
-                    if (this.props.users.length > 0) {
-                        return html`
-                        <h1>Posts</h1>
-                        <${PostList} profiles=${this.props.profiles} posts=${this.props.posts} />
-                        `;
-                    } else {
-                        return html`
-                        <h1>Create List</h1>
-                        <p>Enter users (one per row).</p>
-                        <p><textarea id="users" /></p>
-                        <p><button onClick=${createList}>Create List</button></p>
-                        `;
-                    }
-                }
-            }
+			class App extends Component {
+				state = { listStyle: "disc" };
+				onChange = (e) => {
+					this.setState({ listStyle: e.target.value });
+					console.log("list style: " + this.state.listStyle);
+				};
+				render() {
+					if (this.props.users.length > 0) {
+						return html`
+							<${ListStyleSelect} change=${this.onChange} />
+							<h1>Posts</h1>
+							<${PostList}
+								profiles=${this.props.profiles}
+								posts=${this.props.posts}
+								listStyle=${this.state.listStyle}
+							/>
+						`;
+					} else {
+						return html`
+							<h1>Create List</h1>
+							<p>Enter users (one per row).</p>
+							<p><textarea id="users" /></p>
+							<p><button onClick=${createList}>Create List</button></p>
+						`;
+					}
+				}
+			}
 
-            function PostList(props) {
-                return html`
-                <ul>
-                    ${props.posts.map(post => (
-                        html`<${Post} profiles=${props.profiles} post=${post} />`
-                    ))}
-                </ul>
-                `;
-            }
+			function PostList(props) {
+				return html`
+					<ul style="list-style-type: ${props.listStyle}">
+						${props.posts.map(
+							(post) =>
+								html`<${Post} profiles=${props.profiles} post=${post} />`
+						)}
+					</ul>
+				`;
+			}
 
-            function Post(props) {
-                const post = props.post;
-                const profiles = props.profiles;
+			function Post(props) {
+				const post = props.post;
+				const profiles = props.profiles;
 
-                const uriParts = post.uri.slice(5).split('/');
-                if (uriParts.length != 3) {
-                    return html`<li>(weird post with unexpected URI: ${post.uri})</li>`;
-                }
+				const uriParts = post.uri.slice(5).split("/");
+				if (uriParts.length != 3) {
+					return html`<li>(weird post with unexpected URI: ${post.uri})</li>`;
+				}
 
-                const did = uriParts[0];
-                const postId = uriParts[2];
-                const appUrl = `https://staging.bsky.app/profile/${did}/post/${postId}`;
+				const did = uriParts[0];
+				const postId = uriParts[2];
+				const appUrl = `https://staging.bsky.app/profile/${did}/post/${postId}`;
 
-                const name = profiles[did]?.value?.displayName || '';
-                const isReply = 'reply' in post.value;
+				const name = profiles[did]?.value?.displayName || "";
+				const isReply = "reply" in post.value;
 
-                return html`
-                <li>
-                    <a href="${appUrl}" target="_blank">
-                        <b>${name}</b> ${isReply? '(reply)' : ''}
-                        <br />${post.value.text}
-                    </a>
-                </li>
-                `;
-            }
+				return html`
+					<li>
+						<a href="${appUrl}" target="_blank">
+							<b>${name}</b> ${isReply ? "(reply)" : ""} <br />${post.value
+								.text}
+						</a>
+					</li>
+				`;
+			}
 
-            async function createList() {
-              const users = document.getElementById("users").value.split('\n');
-              const dids = await Promise.all(users.map(user => resolveHandle(user).then(handle => handle || user)));
-              const paramStr = new URLSearchParams({
-                users: dids.join(';')
-              }).toString();
-              window.location.href = `?${paramStr}`;
-            }
+			function ListStyleSelect(props) {
+				return html`<select onChange=${props.change}>
+					<option value="disc">Disc</option>
+					<option value="circle">Circle</option>
+					<option value="square">Square</option>
+				</select>`;
+			}
 
-            const profileLookups = Promise.all(users.map(user => getProfile(user)));
-            const postLookups = Promise.all(users.map(user => getPosts(user)));
+			async function createList() {
+				const users = document.getElementById("users").value.split("\n");
+				const dids = await Promise.all(
+					users.map((user) =>
+						resolveHandle(user).then((handle) => handle || user)
+					)
+				);
+				const paramStr = new URLSearchParams({
+					users: dids.join(";"),
+				}).toString();
+				window.location.href = `?${paramStr}`;
+			}
 
-            const posts = (await postLookups).flat();
-            posts.sort((a,b) => -a.value.createdAt.localeCompare(b.value.createdAt));
-            console.log(JSON.stringify(posts));
+			const profileLookups = Promise.all(users.map((user) => getProfile(user)));
+			const postLookups = Promise.all(users.map((user) => getPosts(user)));
 
-            const profileList = await profileLookups;
-            const profiles = {};
-            profileList.map(profile => {
-              if (!profile.uri) {
-                return;
-              }
-              const uriParts = profile.uri.slice(5).split('/');
-              if (uriParts.length == 0) {
-                console.error(`Invalid URI for profile: ${profile.uri}`);
-                return;
-              }
-              const did = uriParts[0];
-              profiles[did] = profile;
-            });
+			const posts = (await postLookups).flat();
+			posts.sort((a, b) => -a.value.createdAt.localeCompare(b.value.createdAt));
+			console.log(JSON.stringify(posts));
 
-            render(html`<${App} users=${users} profiles=${profiles} posts=${posts} />`, document.getElementById("app"));
-        </script>
-    </body>
+			const profileList = await profileLookups;
+			const profiles = {};
+			profileList.map((profile) => {
+				if (!profile.uri) {
+					return;
+				}
+				const uriParts = profile.uri.slice(5).split("/");
+				if (uriParts.length == 0) {
+					console.error(`Invalid URI for profile: ${profile.uri}`);
+					return;
+				}
+				const did = uriParts[0];
+				profiles[did] = profile;
+			});
+
+			render(
+				html`<${App} users=${users} profiles=${profiles} posts=${posts} />`,
+				document.getElementById("app")
+			);
+		</script>
+	</body>
 </html>
