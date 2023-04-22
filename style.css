@@ -61,8 +61,12 @@ textarea {
 button {
     padding: 1rem 2rem 1rem 2rem;
     font-size: 2rem;
-    background:rgb(0, 133, 255);
+    background: rgb(0, 133, 255);
     color: #FFF;
-    border-radius: 0.5rem;
+    border-radius: 2.4rem;
     border: none;
+}
+
+button:hover {
+  cursor:pointer;
 }
