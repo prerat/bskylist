@@ -1,72 +1,132 @@
 :root {
-    font-size: 62.5%;
-  }
+  font-size: 62.5%;
+  --clr-accent: rgb(0, 133, 255);
+  --clr-bg: #141417;
+  --clr-btn: rgb(185, 185, 193);
+  --clr-circle: rgb(55, 57, 66);
+}  
+
+.lightmode {
+  --clr-bg: #FFF;
+  --clr-btn: rgb(84, 86, 100);
+  --clr-circle: rgb(243, 243, 248);
+}
 
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+#app {
+width: 90%;
+max-width: 60ch;
+margin: 0 auto;
 }
 
 body {
-    font-size: 1.6rem ;
-    background: #141417; 
-    color: #FFF; 
-    font-family: "Segoe UI", sans-serif;
-    text-align: center;
-  }
+  font-size: 1.6rem ;
+  background: #141417; 
+  color: #FFF; 
+  font-family: "Segoe UI", sans-serif;
+}
 
-  h1 {
-    margin: 2rem 0;
-    font-size: 2rem;
-    letter-spacing: 0.2rem;
-    text-transform: uppercase;
-  }
-  
+/* posts list */
+
+.title {
+  display: flex;
+  justify-content: space-between;
+}
+
+h1 {
+  margin: 2rem 0;
+  font-size: 2rem;
+  letter-spacing: 0.1rem;
+  text-transform: uppercase;
+}
+
 ul {
-    display: inline-block;
-    width: 90%;
-    max-width: 60ch;
-    text-align: left;
-    list-style-type: none;
+  text-align: left;
+  list-style-type: none;
 }
 
 li {
-    border-bottom: 0.1rem solid rgb(107, 107, 107);
-    padding-bottom: 2rem;
-    margin-bottom: 1.5rem;
+  border-bottom: 0.1rem solid rgb(107, 107, 107);
+  padding-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 a {
-    text-decoration: none;
-    color: #FFF;
+  text-decoration: none;
+  color: #FFF;
 }
 
 b {
-    font-size: 1.8rem;  
-    color: rgb(0, 133, 255);
+  font-size: 1.8rem;  
+  color: var(--clr-accent);
+}
+
+/* create list form */
+
+.create-list-container {
+text-align: center;
+}  
+
+.create-list-container h1 {
+margin-bottom: 0;
 }
 
 p {
-    margin-bottom: 2.7rem;
+  margin-bottom: 2.7rem;
 }
 
 textarea {
-    width: 30ch;
-    height: 30rem;
-    font-size: 1.6rem;
-    border-radius: 0.5rem;
+  width: 30ch;
+  height: 30rem;
+  font-size: 1.6rem;
+  border-radius: 0.8rem;
 }
 
 button {
-    padding: 1rem 2rem 1rem 2rem;
-    font-size: 2rem;
-    background: rgb(0, 133, 255);
-    color: #FFF;
-    border-radius: 2.4rem;
-    border: none;
+  padding: 1rem 2rem 1rem 2rem;
+  font-size: 1.7rem;
+  background: var(--clr-accent);
+  color: #FFF;
+  border-radius: 2.4rem;
+  border: none;
 }
 
 button:hover {
-  cursor:pointer;
+cursor:pointer;
+}
+
+/* color theme switcher */
+
+.toggle {
+display: flex;
+justify-content: flex-end;
+align-items: center;
+gap: 0.5rem;
+width: 12rem;
+background: var(--clr-bg);
+border: none;
+text-decoration: none;
+cursor: pointer;
+padding: 0;
+}
+
+.circle {
+background: var(--clr-circle);
+width: 2.6rem;
+height: 2.6rem;
+border-radius: 1.5rem;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.txt {
+color: var(--clr-btn);
+margin-bottom: 0;
+font-size: 1.4rem;
 }
